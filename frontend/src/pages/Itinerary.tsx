@@ -248,28 +248,45 @@ const Itinerary = () => {
             <MapPin className="h-6 w-6 text-primary" />
             <h2 className="text-2xl font-bold">Places to Visit</h2>
           </div>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
             {options.activities && options.activities.length > 0 ? (
               options.activities.map((activity, index) => (
                 <div
                   key={index}
-                  className="p-6 bg-card/50 border border-border/50 rounded-2xl backdrop-blur-sm hover:border-primary/50 transition-colors"
+                  className="bg-card/50 border border-border/50 rounded-2xl backdrop-blur-sm hover:border-primary/50 transition-colors overflow-hidden"
                 >
-                  <h3 className="font-bold text-lg mb-2">{activity.name}</h3>
-                  <p className="text-sm text-muted-foreground mb-3">{activity.description || activity.category}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-primary">
-                      <Calendar className="h-4 w-4" />
-                      {activity.duration}
+                  <div className="aspect-video relative overflow-hidden">
+                    <img 
+                      src={activity.image} 
+                      alt={activity.name}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
+                      ⭐ {activity.rating}
                     </div>
-                    <div className="text-sm font-semibold">
-                      ${activity.price}
+                  </div>
+                  <div className="p-4">
+                    <h3 className="font-bold text-lg mb-2">{activity.name}</h3>
+                    <p className="text-sm text-muted-foreground mb-3">{activity.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm text-primary">
+                        <Calendar className="h-4 w-4" />
+                        {activity.duration}
+                      </div>
+                      <div className="text-sm font-semibold text-primary">
+                        ₹{activity.price}
+                      </div>
+                    </div>
+                    <div className="mt-2">
+                      <span className="inline-block bg-primary/10 text-primary px-2 py-1 rounded-full text-xs">
+                        {activity.category}
+                      </span>
                     </div>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="col-span-2 p-4 text-center text-muted-foreground">
+              <div className="col-span-full p-4 text-center text-muted-foreground">
                 No activities available for this destination
               </div>
             )}
