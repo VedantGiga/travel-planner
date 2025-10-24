@@ -1,0 +1,73 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trips     Trip[]
+}
+
+model Trip {
+  id          String        @id @default(cuid())
+  title       String
+  description String?
+  destination String
+  startDate   DateTime
+  endDate     DateTime
+  budget      Float?
+  userId      String
+  user        User          @relation(fields: [userId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  bookings    Booking[]
+  trainResults TrainResult[]
+}
+
+model Booking {
+  id       String      @id @default(cuid())
+  type     BookingType
+  details  Json
+  tripId   String
+  trip     Trip        @relation(fields: [tripId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model TrainResult {
+  id           String   @id @default(cuid())
+  trainNumber  String
+  trainName    String
+  fromStation  String
+  toStation    String
+  departure    String
+  arrival      String
+  duration     String
+  sleeperPrice Int?
+  ac3Price     Int?
+  ac2Price     Int?
+  availability String?
+  date         DateTime
+  tripId       String?
+  trip         Trip?    @relation(fields: [tripId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([fromStation, toStation, date])
+}
+
+enum BookingType {
+  FLIGHT
+  HOTEL
+  TRAIN
+  ACTIVITY
+}
