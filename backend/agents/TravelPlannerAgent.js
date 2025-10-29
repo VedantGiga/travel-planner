@@ -76,43 +76,117 @@ class TravelPlannerAgent {
 
   async searchFlights(origin, destination, date) {
     try {
-      // For now, return empty array until Amadeus is configured
+      if (origin.toLowerCase() === destination.toLowerCase()) {
+        console.log('Same city trip, no flights needed');
+        return [];
+      }
+      
+      const fromId = this.getAirportCode(origin) + '.AIRPORT';
+      const toId = this.getAirportCode(destination) + '.AIRPORT';
+      
+      const departDate = new Date();
+      departDate.setDate(departDate.getDate() + 7);
+      
+      console.log(`Searching flights: ${fromId} to ${toId} on ${departDate.toISOString().split('T')[0]}`);
+      
+      const response = await axios.get('https://booking-com15.p.rapidapi.com/api/v1/flights/searchFlights', {
+        params: {
+          fromId: fromId,
+          toId: toId,
+          departDate: departDate.toISOString().split('T')[0],
+          stops: 'none',
+          pageNo: 1,
+          adults: 2,
+          sort: 'BEST',
+          cabinClass: 'ECONOMY',
+          currency_code: 'INR'
+        },
+        headers: {
+          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'booking-com15.p.rapidapi.com'
+        }
+      });
+
+      console.log('Flight response status:', response.data?.status);
+      console.log('Flight offers count:', response.data?.data?.flightOffers?.length || 0);
+      console.log('Rate limit headers:', {
+        remaining: response.headers['x-ratelimit-requests-remaining'],
+        limit: response.headers['x-ratelimit-requests-limit'],
+        reset: response.headers['x-ratelimit-requests-reset']
+      });
+
+      if (response.data?.data?.flightOffers) {
+        return response.data.data.flightOffers.slice(0, 3).map(flight => ({
+          id: flight.id,
+          airline: flight.segments?.[0]?.legs?.[0]?.carriersData?.[0]?.name || 'Airline',
+          departure: flight.segments?.[0]?.legs?.[0]?.departureTime || '09:00',
+          arrival: flight.segments?.[0]?.legs?.[0]?.arrivalTime || '11:00',
+          duration: flight.segments?.[0]?.legs?.[0]?.totalTime || '2h 00m',
+          price: Math.round(flight.priceBreakdown?.total?.units || 5000),
+          stops: 0
+        }));
+      }
+      
       return [];
     } catch (error) {
+      console.error('Flight search error:', error.message);
       return [];
     }
   }
 
   async searchHotels(destination, checkIn, checkOut, budget) {
+    // API quota exceeded - returning empty array as requested
+    console.log('Hotel API quota exceeded, returning empty array');
+    return [];
+    
+    /* Commented out due to rate limits
     try {
-      // Booking.com API or Hotels.com API
-      const response = await axios.get('https://booking-com.p.rapidapi.com/v1/hotels/search', {
+      const today = new Date();
+      const arrivalDate = new Date(today);
+      arrivalDate.setDate(today.getDate() + 7);
+      const departureDate = new Date(arrivalDate);
+      departureDate.setDate(arrivalDate.getDate() + 2);
+      
+      const response = await axios.get('https://booking-com15.p.rapidapi.com/api/v1/hotels/searchHotels', {
         params: {
-          dest_type: 'city',
           dest_id: await this.getCityId(destination),
-          checkin_date: checkIn.toISOString().split('T')[0],
-          checkout_date: checkOut.toISOString().split('T')[0],
-          adults_number: 2,
-          room_number: 1,
-          order_by: 'price'
+          search_type: 'city',
+          arrival_date: arrivalDate.toISOString().split('T')[0],
+          departure_date: departureDate.toISOString().split('T')[0],
+          adults: 2,
+          room_qty: 1,
+          page_number: 1,
+          languagecode: 'en-us',
+          currency_code: 'INR'
         },
         headers: {
-          'X-RapidAPI-Key': process.env.BOOKING_API_KEY,
-          'X-RapidAPI-Host': 'booking-com.p.rapidapi.com'
+          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'booking-com15.p.rapidapi.com'
         }
       });
 
-      return response.data.result.slice(0, 5).map(hotel => ({
-        name: hotel.hotel_name,
-        price: Math.round(hotel.min_total_price),
-        rating: hotel.review_score / 2,
-        amenities: hotel.hotel_facilities?.slice(0, 3),
-        location: hotel.district,
-        image: hotel.main_photo_url
-      })).filter(hotel => hotel.name && hotel.price);
+      if (response.data?.data?.hotels && response.data.data.hotels.length > 0) {
+        return response.data.data.hotels.slice(0, 5).map(hotel => ({
+          id: hotel.hotel_id,
+          name: hotel.property?.name,
+          price: Math.round(hotel.property?.priceBreakdown?.grossPrice?.value || 3000),
+          rating: parseFloat(hotel.property?.reviewScore || 8.0),
+          reviewCount: hotel.property?.reviewCount || 100,
+          location: hotel.property?.wishlistName || destination,
+          description: `${hotel.property?.propertyClass || 3}-star hotel in ${destination}. ${hotel.property?.reviewScoreWord || 'Good'} rating.`,
+          amenities: ['WiFi', 'AC', 'Room Service', 'Free Cancellation'],
+          photos: hotel.property?.photoUrls || [],
+          image: hotel.property?.photoUrls?.[0] || "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&h=400&fit=crop",
+          address: `${destination}, India`
+        })).filter(hotel => hotel.name && hotel.price <= budget * 0.4);
+      }
+      
+      return [];
     } catch (error) {
+      console.error('Hotel search error:', error.message);
       return [];
     }
+    */
   }
 
   async searchTrains(origin, destination, date) {
@@ -167,7 +241,7 @@ class TravelPlannerAgent {
         return [];
       }
 
-      return response.data.data.slice(0, 6).map(activity => ({
+      return response.data.data.slice(0, 12).map(activity => ({
         name: activity.name,
         price: Math.floor(Math.random() * 1000) + 200,
         duration: "2-3 hours",
@@ -186,11 +260,12 @@ class TravelPlannerAgent {
       // Step 1: Extract intent
       const intent = await this.extractIntent(userMessage);
       
-      // Step 2: Research options
-      const [flights, trains, hotels, activities] = await Promise.all([
-        this.searchFlights(intent.from, intent.destination, new Date()),
+      // Step 2: Research options - flights commented out for testing
+      // const flights = await this.searchFlights(intent.from, intent.destination, new Date());
+      const flights = [];
+      const hotels = await this.searchHotels(intent.destination, new Date(), new Date(), intent.budget);
+      const [trains, activities] = await Promise.all([
         this.searchTrains(intent.from, intent.destination, new Date()),
-        this.searchHotels(intent.destination, new Date(), new Date(), intent.budget),
         this.searchActivities(intent.destination)
       ]);
       
@@ -259,6 +334,7 @@ class TravelPlannerAgent {
   }
 
   getAirportCode(city) {
+    const normalizedCity = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
     const airportCodes = {
       'Delhi': 'DEL',
       'Mumbai': 'BOM',
@@ -266,25 +342,52 @@ class TravelPlannerAgent {
       'Chennai': 'MAA',
       'Kolkata': 'CCU',
       'Lucknow': 'LKO',
+      'Bhopal': 'BHO',
+      'Jaipur': 'JAI',
+      'Goa': 'GOI',
       'Paris': 'CDG',
       'London': 'LHR',
       'New York': 'JFK'
     };
-    return airportCodes[city] || 'DEL';
+    console.log(`Getting airport code for: ${city} -> ${normalizedCity} -> ${airportCodes[normalizedCity] || 'DEL'}`);
+    return airportCodes[normalizedCity] || 'DEL';
   }
 
 
 
   async getCityId(city) {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 second delay before lookup
+      const response = await axios.get('https://booking-com15.p.rapidapi.com/api/v1/hotels/searchDestination', {
+        params: {
+          query: city
+        },
+        headers: {
+          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'booking-com15.p.rapidapi.com'
+        }
+      });
+      
+      if (response.data?.data?.[0]?.dest_id) {
+        return response.data.data[0].dest_id;
+      }
+    } catch (error) {
+      console.log('Dynamic city ID lookup failed, using fallback');
+    }
+    
+    const normalizedCity = city.charAt(0).toUpperCase() + city.slice(1).toLowerCase();
     const cityIds = {
       'Delhi': '-2092174',
-      'Mumbai': '-2092042',
+      'Mumbai': '-2092042', 
       'Lucknow': '-2106102',
       'Bhopal': '-2106103',
       'Bangalore': '-2090174',
-      'Chennai': '-2092588'
+      'Chennai': '-2092588',
+      'Kolkata': '-2092315',
+      'Jaipur': '-2106102',
+      'Goa': '-2092174'
     };
-    return cityIds[city] || cityIds['Delhi'];
+    return cityIds[normalizedCity] || cityIds['Delhi'];
   }
 
   async getLocationId(city) {
