@@ -6,12 +6,12 @@ const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const prisma = require('./lib/prisma');
 const auth = require('./middleware/auth');
-const TravelPlannerAgent = require('./agents/TravelPlannerAgent');
+const OrchestratorAgent = require('./agents/OrchestratorAgent');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const travelAgent = new TravelPlannerAgent();
+const orchestrator = new OrchestratorAgent();
 
 // SMTP transporter
 const transporter = nodemailer.createTransport({
@@ -180,6 +180,37 @@ app.post('/api/trips', auth, async (req, res) => {
   }
 });
 
+app.delete('/api/trips/all', auth, async (req, res) => {
+  try {
+    await prisma.trip.deleteMany({
+      where: { userId: req.user.userId }
+    });
+    res.json({ message: 'All trips deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/trips/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check if trip belongs to user
+    const trip = await prisma.trip.findFirst({
+      where: { id, userId: req.user.userId }
+    });
+    
+    if (!trip) {
+      return res.status(404).json({ error: 'Trip not found' });
+    }
+    
+    await prisma.trip.delete({ where: { id } });
+    res.json({ message: 'Trip deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Test endpoint
 app.post('/api/test-plan', auth, async (req, res) => {
   try {
@@ -224,7 +255,7 @@ app.post('/api/plan-trip', auth, async (req, res) => {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const planningResult = await travelAgent.generateItinerary(message);
+    const planningResult = await orchestrator.processRequest(message, req.user.userId);
     
     // Save trip to database
     const trip = await prisma.trip.create({
@@ -234,12 +265,10 @@ app.post('/api/plan-trip', auth, async (req, res) => {
         destination: planningResult.intent.destination,
         startDate: new Date(),
         endDate: new Date(Date.now() + planningResult.intent.duration * 24 * 60 * 60 * 1000),
-        budget: planningResult.totalBudget.total,
+        budget: planningResult.totalBudget.estimatedCost || planningResult.intent.budget,
         userId: req.user.userId
       }
     });
-
-
 
     res.json({
       trip,

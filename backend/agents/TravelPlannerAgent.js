@@ -54,9 +54,11 @@ class TravelPlannerAgent {
       return parsed;
     } catch (error) {
       // Extract from message
-      const fromToMatch = userMessage.match(/(?:from\s+)?([a-zA-Z]+)\s+to\s+([a-zA-Z]+)/i);
+      const fromToMatch = userMessage.match(/(?:from\s+)?([a-zA-Z\s]+)\s+to\s+([a-zA-Z\s]+)/i);
       const budgetMatch = userMessage.match(/(\d+)\s*(?:rs|rupees?|inr|₹)/i);
-      const durationMatch = userMessage.match(/(\d+)\s*days?/i);
+      const durationMatch = userMessage.match(/(\d+)\s*(?:days?|day)/i);
+      const travelersMatch = userMessage.match(/(\d+)\s*(?:people|persons?|travelers?|travellers?|pax)/i) || 
+                           userMessage.match(/for\s+(\d+)/i);
       
       if (fromToMatch) {
         return {
@@ -65,7 +67,7 @@ class TravelPlannerAgent {
           tripType: "leisure",
           budget: budgetMatch ? parseInt(budgetMatch[1]) : 25000,
           duration: durationMatch ? parseInt(durationMatch[1]) : 5,
-          travelers: 2,
+          travelers: travelersMatch ? parseInt(travelersMatch[1]) : 2,
           preferences: ["sightseeing"]
         };
       }
@@ -260,63 +262,63 @@ class TravelPlannerAgent {
       // Step 1: Extract intent
       const intent = await this.extractIntent(userMessage);
       
-      // Step 2: Research options - flights commented out for testing
-      // const flights = await this.searchFlights(intent.from, intent.destination, new Date());
-      const flights = [];
+      // Step 2: Research options
+      const flights = await this.searchFlights(intent.from, intent.destination, new Date());
       const hotels = await this.searchHotels(intent.destination, new Date(), new Date(), intent.budget);
       const [trains, activities] = await Promise.all([
         this.searchTrains(intent.from, intent.destination, new Date()),
         this.searchActivities(intent.destination)
       ]);
       
-      // Step 3: Generate itinerary
-      const itineraryPrompt = PromptTemplate.fromTemplate(`
-        Create a detailed {duration}-day travel itinerary from {from} to {destination} in India within ₹{budget} budget.
-        
-        IMPORTANT: Stay within the ₹{budget} budget. Choose the most affordable options.
-        
-        Trip Details:
-        - From: {from}
-        - Destination: {destination}
-        - Duration: {duration} days
-        - Budget: ₹{budget} (STRICT LIMIT)
-        - Trip Type: {tripType}
-        - Travelers: {travelers}
-        
-        Available Options:
-        Flights: {flights}
-        Trains: {trains}
-        Hotels: {hotels}
-        Activities: {activities}
-        
-        Create a budget-friendly day-by-day itinerary with cost breakdown in INR (₹). Ensure total cost does not exceed ₹{budget}.
-      `);
+      const options = { flights, trains, hotels, activities };
       
-      const formattedPrompt = await itineraryPrompt.format({
-        from: intent.from,
-        destination: intent.destination,
-        duration: intent.duration,
-        budget: intent.budget,
-        tripType: intent.tripType,
-        travelers: intent.travelers,
-        flights: JSON.stringify(flights),
-        trains: JSON.stringify(trains),
-        hotels: JSON.stringify(hotels),
-        activities: JSON.stringify(activities)
-      });
+      // Step 3: Budget Analysis & Optimization
+      const budgetAnalysis = await this.budgetAnalyst.analyzeBudget(intent, options);
       
-      const result = await this.llm.invoke(formattedPrompt);
+      // Step 4: Generate optimized itinerary
+      const optimizedResult = await this.budgetAnalyst.generateOptimizedItinerary(intent, budgetAnalysis, options);
       
       return {
         intent,
-        options: { flights, trains, hotels, activities },
-        itinerary: result.content,
-        totalBudget: this.calculateBudget(flights, trains, hotels, activities, intent.duration)
+        options,
+        budgetAnalysis: optimizedResult,
+        itinerary: optimizedResult.optimizedItinerary,
+        totalBudget: optimizedResult.budgetBreakdown
       };
       
     } catch (error) {
       throw new Error(`Travel planning failed: ${error.message}`);
     }
+  }
+
+  async generateBaseItinerary(intent, options) {
+    const prompt = PromptTemplate.fromTemplate(`
+      Create a {duration}-day travel itinerary for {destination}:
+      
+      Trip Details:
+      - Destination: {destination}
+      - Duration: {duration} days
+      - Budget: ₹{budget}
+      - Travelers: {travelers}
+      
+      Available Options:
+      Hotels: {hotels}
+      Activities: {activities}
+      
+      Create a day-by-day itinerary with activities and timing.
+    `);
+    
+    const formattedPrompt = await prompt.format({
+      destination: intent.destination,
+      duration: intent.duration,
+      budget: intent.budget,
+      travelers: intent.travelers,
+      hotels: JSON.stringify(options.hotels.slice(0, 2)),
+      activities: JSON.stringify(options.activities.slice(0, 6))
+    });
+    
+    const result = await this.llm.invoke(formattedPrompt);
+    return result.content;
   }
 
   // Helper methods for API integration

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { MapPin, Hotel, Train, Plane, Calendar, DollarSign, ArrowLeft, Star, Clock } from "lucide-react";
+import { MapPin, Hotel, Train, Plane, Calendar, DollarSign, ArrowLeft, Star, Clock, TrendingDown, AlertCircle, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import HotelCard from "@/components/chat/HotelCard";
@@ -20,6 +20,27 @@ const Itinerary = () => {
     }
   }, []);
 
+  const [destinationImage, setDestinationImage] = useState('');
+
+  useEffect(() => {
+    const fetchDestinationImage = async () => {
+      if (tripData?.planning?.intent?.destination) {
+        try {
+          const wikiResponse = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(tripData.planning.intent.destination)}`);
+          const wikiData = await wikiResponse.json();
+          
+          if (wikiData.thumbnail?.source) {
+            setDestinationImage(wikiData.thumbnail.source.replace(/\/\d+px-/, '/1920px-'));
+          }
+        } catch (error) {
+          console.error('Failed to fetch destination image');
+        }
+      }
+    };
+    
+    fetchDestinationImage();
+  }, [tripData]);
+
   if (!tripData) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
@@ -33,78 +54,188 @@ const Itinerary = () => {
   }
 
   const { planning } = tripData;
-  const { intent, options, itinerary, totalBudget } = planning;
+  const { intent, options, itinerary, totalBudget, budgetAnalysis, localTips } = planning;
   
   return (
     <div className="min-h-screen bg-black">
-      {/* Header */}
-      <div className="border-b border-zinc-900 bg-black/80 backdrop-blur-xl sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-5">
-          <div className="flex items-center gap-4">
-            <Button asChild variant="ghost" size="icon" className="rounded-full hover:bg-zinc-900">
-              <Link to="/">
-                <ArrowLeft className="h-5 w-5 text-zinc-400" />
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-2xl font-semibold text-white tracking-tight">{intent.destination}</h1>
-              <p className="text-sm text-zinc-500 mt-0.5">{intent.duration} days · ₹{intent.budget}</p>
+      {/* Full Page Hero Section */}
+      <motion.section
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="relative h-screen flex items-center justify-center overflow-hidden"
+      >
+        {destinationImage && (
+          <img 
+            src={destinationImage} 
+            alt={intent.destination}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-black/50"></div>
+        
+        {/* Back Button */}
+        <Button asChild variant="ghost" size="icon" className="absolute top-6 left-6 z-20 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40">
+          <Link to="/">
+            <ArrowLeft className="h-5 w-5 text-white" />
+          </Link>
+        </Button>
+        
+        {/* Hero Content */}
+        <div className="relative z-10 text-center text-white px-6">
+          <motion.h1 
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="text-6xl md:text-8xl font-bold mb-4"
+          >
+            {intent.destination}
+          </motion.h1>
+          
+          <motion.div 
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="flex items-center justify-center gap-8 text-xl mb-8"
+          >
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              <span>{intent.duration} Days</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span>👥</span>
+              <span>{intent.travelers} Travelers</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              <span>₹{intent.budget}</span>
+            </div>
+          </motion.div>
+          
+          <motion.p 
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6 }}
+            className="text-xl text-gray-200 max-w-2xl mx-auto"
+          >
+            Discover the magic of {intent.destination} with our AI-curated itinerary
+          </motion.p>
+        </div>
+        
+        {/* Scroll Indicator */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-white animate-bounce">
+          <div className="w-6 h-10 border-2 border-white rounded-full flex justify-center">
+            <div className="w-1 h-3 bg-white rounded-full mt-2"></div>
           </div>
         </div>
-      </div>
+      </motion.section>
 
-      <div className="container mx-auto px-6 py-12 max-w-6xl">
-        {/* Hero Section */}
+      <div className="container mx-auto px-6 py-16 max-w-6xl">
+        
+        {/* Hotels Section */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-16 relative overflow-hidden"
+          className="mb-16"
         >
-          <div className="relative bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 rounded-3xl p-8 border border-zinc-800">
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1502602898536-47ad22581b52')] bg-cover bg-center opacity-10 rounded-3xl"></div>
-            <div className="relative z-10">
-              <div className="flex items-center gap-3 mb-4">
-                <h1 className="text-3xl font-bold text-white">{intent.destination}</h1>
-                <span className="text-2xl">🇮🇳</span>
+          <div className="flex items-center gap-3 mb-8">
+            <Hotel className="h-6 w-6 text-white" />
+            <h2 className="text-3xl font-bold text-white">Hotel Recommendations</h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {options.hotels && options.hotels.length > 0 ? (
+              options.hotels.map((hotel, index) => (
+                <div key={index} className="bg-zinc-900 rounded-2xl overflow-hidden hover:bg-zinc-800 transition-colors">
+                  <div className="aspect-video bg-zinc-800">
+                    <img src={hotel.image} alt={hotel.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-white mb-2">{hotel.name}</h3>
+                    <p className="text-zinc-400 text-sm mb-4">{hotel.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-white font-medium">{hotel.rating}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-white">₹{hotel.price}</p>
+                        <p className="text-xs text-zinc-400">per night</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <Hotel className="h-12 w-12 mx-auto mb-4 text-zinc-600" />
+                <p className="text-zinc-400">No hotels available</p>
               </div>
-              
-              <p className="text-lg text-zinc-300 mb-6">
-                {intent.duration} unforgettable days in {intent.destination} — explore culture, food, and amazing sights.
-              </p>
-              
-              <div className="grid md:grid-cols-4 gap-4 mb-6">
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-zinc-700">
-                  <Calendar className="h-5 w-5 text-zinc-400 mb-2" />
-                  <p className="text-xs text-zinc-400 uppercase tracking-wider">Duration</p>
-                  <p className="text-white font-semibold">{intent.duration} days</p>
-                </div>
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-zinc-700">
-                  <DollarSign className="h-5 w-5 text-zinc-400 mb-2" />
-                  <p className="text-xs text-zinc-400 uppercase tracking-wider">Budget</p>
-                  <p className="text-white font-semibold">₹{intent.budget}</p>
-                </div>
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-zinc-700">
-                  <MapPin className="h-5 w-5 text-zinc-400 mb-2" />
-                  <p className="text-xs text-zinc-400 uppercase tracking-wider">Trip Type</p>
-                  <p className="text-white font-semibold capitalize">{intent.tripType}</p>
-                </div>
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl p-4 border border-zinc-700">
-                  <span className="text-lg mb-2 block">☀️</span>
-                  <p className="text-xs text-zinc-400 uppercase tracking-wider">Weather</p>
-                  <p className="text-white font-semibold">25°C avg</p>
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <button className="px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition-colors">
-                  🪄 Regenerate Plan
+            )}
+          </div>
+        </motion.section>
+
+        {/* Tourist Places */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-16"
+        >
+          <div className="flex items-center gap-3 mb-8">
+            <MapPin className="h-6 w-6 text-white" />
+            <h2 className="text-3xl font-bold text-white">Places to Visit</h2>
+          </div>
+          
+          {/* Day Menu */}
+          <div className="flex gap-2 mb-8 overflow-x-auto">
+            {Array.from({ length: intent.duration }, (_, dayIndex) => {
+              const dayNumber = dayIndex + 1;
+              return (
+                <button
+                  key={dayNumber}
+                  className={`px-6 py-3 rounded-full font-medium whitespace-nowrap ${
+                    dayNumber === 1 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
+                  }`}
+                >
+                  Day {dayNumber}
                 </button>
-                <button className="px-4 py-2 bg-zinc-800 text-white rounded-lg font-medium hover:bg-zinc-700 transition-colors border border-zinc-700">
-                  Edit Preferences
-                </button>
+              );
+            })}
+          </div>
+          
+          {/* Places Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {options.activities && options.activities.length > 0 ? (
+              options.activities.map((place, index) => (
+                <div key={index} className="bg-zinc-900 rounded-2xl overflow-hidden hover:bg-zinc-800 transition-colors">
+                  <div className="aspect-video bg-zinc-800">
+                    <img src={place.image} alt={place.name} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+                        {place.category}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-white font-medium">{place.rating}</span>
+                      </div>
+                    </div>
+                    <h3 className="text-xl font-semibold text-white mb-2">{place.name}</h3>
+                    <p className="text-zinc-400 text-sm mb-4">{place.description}</p>
+                    <div className="flex items-center gap-2 text-zinc-300">
+                      <Clock className="h-4 w-4" />
+                      <span className="text-sm">{place.duration}</span>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-zinc-600" />
+                <p className="text-zinc-400">No places found for {intent.destination}</p>
               </div>
-            </div>
+            )}
           </div>
         </motion.section>
 
@@ -304,63 +435,9 @@ const Itinerary = () => {
           </motion.section>
         )}
 
-        {/* Tourist Places Section */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25 }}
-          className="mb-16"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <MapPin className="h-5 w-5 text-zinc-500" />
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Places to Visit</h2>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {options.activities && options.activities.length > 0 ? (
-              options.activities.map((activity, index) => (
-                <div
-                  key={index}
-                  className="bg-zinc-950 border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 transition-colors group"
-                >
-                  <div className="aspect-video relative overflow-hidden bg-zinc-900">
-                    <img 
-                      src={activity.image} 
-                      alt={activity.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    <div className="absolute top-3 right-3 bg-black/80 backdrop-blur-sm text-white px-2.5 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1">
-                      <Star className="h-3 w-3 fill-white text-white" />
-                      {activity.rating}
-                    </div>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-semibold text-base text-white mb-2">{activity.name}</h3>
-                    <p className="text-xs text-zinc-500 mb-4 leading-relaxed">{activity.description}</p>
-                    <div className="flex items-center mb-3">
-                      <div className="flex items-center gap-1.5 text-xs text-zinc-400">
-                        <Clock className="h-3.5 w-3.5" />
-                        {activity.duration}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="inline-block bg-zinc-900 text-zinc-400 px-2.5 py-1 rounded-lg text-xs font-medium">
-                        {activity.category}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full p-8 text-center bg-zinc-950 border border-zinc-900 rounded-2xl">
-                <MapPin className="h-8 w-8 mx-auto mb-2 text-zinc-700" />
-                <p className="text-sm text-zinc-500">No activities available</p>
-              </div>
-            )}
-          </div>
-        </motion.section>
 
-        {/* Budget Summary */}
+
+        {/* Budget Analysis */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -369,41 +446,202 @@ const Itinerary = () => {
         >
           <div className="flex items-center gap-3 mb-6">
             <DollarSign className="h-5 w-5 text-zinc-500" />
-            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Budget Breakdown</h2>
+            <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">💼 Budget Analysis</h2>
           </div>
-          <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl">
-            <div className="space-y-3">
-              {totalBudget.flights > 0 && (
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-zinc-400">Flights</span>
-                  <span className="font-medium text-white">₹{totalBudget.flights}</span>
+          
+          {budgetAnalysis ? (
+            <div className="space-y-6">
+              {/* Budget Status */}
+              <div className={`p-6 rounded-2xl border ${
+                budgetAnalysis.budgetBreakdown.isWithinBudget 
+                  ? 'bg-green-950/30 border-green-800/50' 
+                  : 'bg-red-950/30 border-red-800/50'
+              }`}>
+                <div className="flex items-center gap-3 mb-4">
+                  {budgetAnalysis.budgetBreakdown.isWithinBudget ? (
+                    <CheckCircle className="h-6 w-6 text-green-400" />
+                  ) : (
+                    <AlertCircle className="h-6 w-6 text-red-400" />
+                  )}
+                  <h3 className="text-lg font-semibold text-white">
+                    {budgetAnalysis.budgetBreakdown.isWithinBudget 
+                      ? 'Budget Optimized ✅' 
+                      : 'Budget Exceeded - Optimizations Applied'}
+                  </h3>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4">
+                  <div>
+                    <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Target Budget</p>
+                    <p className="text-xl font-bold text-white">₹{budgetAnalysis.budgetBreakdown.totalBudget}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">Estimated Cost</p>
+                    <p className="text-xl font-bold text-white">₹{budgetAnalysis.budgetBreakdown.estimatedCost}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-zinc-400 uppercase tracking-wider mb-1">
+                      {budgetAnalysis.budgetBreakdown.savings >= 0 ? 'Savings' : 'Overspend'}
+                    </p>
+                    <p className={`text-xl font-bold ${
+                      budgetAnalysis.budgetBreakdown.savings >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      ₹{Math.abs(budgetAnalysis.budgetBreakdown.savings)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Budget Breakdown */}
+              <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl">
+                <h3 className="text-lg font-semibold text-white mb-4">Detailed Breakdown</h3>
+                <div className="space-y-4">
+                  {Object.entries(budgetAnalysis.budgetBreakdown.breakdown).map(([category, data]) => (
+                    <div key={category} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-zinc-400 capitalize">{category.replace(/([A-Z])/g, ' $1')}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-zinc-500">{data.percentage}%</span>
+                          <span className="font-medium text-white">₹{data.amount}</span>
+                        </div>
+                      </div>
+                      <div className="w-full bg-zinc-800 rounded-full h-2">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(data.percentage, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                  <div className="border-t border-zinc-800 pt-4 mt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold text-white">Daily Budget</span>
+                      <span className="font-semibold text-xl text-white">₹{budgetAnalysis.budgetBreakdown.dailyBudget}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Optimizations */}
+              {budgetAnalysis.optimizations && budgetAnalysis.optimizations.length > 0 && (
+                <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl">
+                  <div className="flex items-center gap-3 mb-4">
+                    <TrendingDown className="h-5 w-5 text-green-400" />
+                    <h3 className="text-lg font-semibold text-white">Cost Optimizations Applied</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {budgetAnalysis.optimizations.map((opt, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-zinc-900 rounded-lg">
+                        <div>
+                          <p className="font-medium text-white">{opt.category}</p>
+                          <p className="text-sm text-zinc-400">{opt.suggestion}</p>
+                        </div>
+                        <div className="text-green-400 font-semibold">-₹{opt.savings}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {totalBudget.trains > 0 && (
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-zinc-400">Trains</span>
-                  <span className="font-medium text-white">₹{totalBudget.trains}</span>
+
+              {/* Recommendations */}
+              {budgetAnalysis.recommendations && budgetAnalysis.recommendations.length > 0 && (
+                <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl">
+                  <h3 className="text-lg font-semibold text-white mb-4">💡 Smart Recommendations</h3>
+                  <div className="space-y-2">
+                    {budgetAnalysis.recommendations.map((rec, index) => (
+                      <div key={index} className="flex items-start gap-3 p-3 bg-zinc-900 rounded-lg">
+                        <span className="text-blue-400 mt-0.5">💡</span>
+                        <p className="text-sm text-zinc-300">{rec}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-              {totalBudget.accommodation > 0 && (
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-zinc-400">Accommodation ({intent.duration} nights)</span>
-                  <span className="font-medium text-white">₹{totalBudget.accommodation}</span>
+            </div>
+          ) : (
+            // Fallback to original budget display
+            <div className="p-6 bg-zinc-950 border border-zinc-900 rounded-2xl">
+              <div className="space-y-3">
+                {totalBudget.flights > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-zinc-400">Flights</span>
+                    <span className="font-medium text-white">₹{totalBudget.flights}</span>
+                  </div>
+                )}
+                {totalBudget.trains > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-zinc-400">Trains</span>
+                    <span className="font-medium text-white">₹{totalBudget.trains}</span>
+                  </div>
+                )}
+                {totalBudget.accommodation > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-zinc-400">Accommodation ({intent.duration} nights)</span>
+                    <span className="font-medium text-white">₹{totalBudget.accommodation}</span>
+                  </div>
+                )}
+                {totalBudget.activities > 0 && (
+                  <div className="flex justify-between items-center py-2">
+                    <span className="text-sm text-zinc-400">Activities</span>
+                    <span className="font-medium text-white">₹{totalBudget.activities}</span>
+                  </div>
+                )}
+                <div className="border-t border-zinc-800 pt-3 mt-3 flex justify-between items-center">
+                  <span className="font-semibold text-white">Total</span>
+                  <span className="font-semibold text-xl text-white">₹{totalBudget.total}</span>
                 </div>
-              )}
-              {totalBudget.activities > 0 && (
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-sm text-zinc-400">Activities</span>
-                  <span className="font-medium text-white">₹{totalBudget.activities}</span>
-                </div>
-              )}
-              <div className="border-t border-zinc-800 pt-3 mt-3 flex justify-between items-center">
-                <span className="font-semibold text-white">Total</span>
-                <span className="font-semibold text-xl text-white">₹{totalBudget.total}</span>
               </div>
             </div>
-          </div>
+          )}
         </motion.section>
+
+        {/* Local Tips */}
+        {localTips && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <span className="text-lg">🗺️</span>
+              <h2 className="text-sm font-medium text-zinc-500 uppercase tracking-wider">Local Insider Tips</h2>
+            </div>
+            <div className="grid md:grid-cols-2 gap-4">
+              {localTips.cultural && (
+                <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-xl">
+                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                    🏛️ Cultural Tips
+                  </h3>
+                  <p className="text-sm text-zinc-400">{localTips.cultural}</p>
+                </div>
+              )}
+              {localTips.food && (
+                <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-xl">
+                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                    🍜 Food & Dining
+                  </h3>
+                  <p className="text-sm text-zinc-400">{localTips.food}</p>
+                </div>
+              )}
+              {localTips.transportation && (
+                <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-xl">
+                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                    🚌 Transportation
+                  </h3>
+                  <p className="text-sm text-zinc-400">{localTips.transportation}</p>
+                </div>
+              )}
+              {localTips.shopping && (
+                <div className="p-4 bg-zinc-950 border border-zinc-900 rounded-xl">
+                  <h3 className="font-semibold text-white mb-2 flex items-center gap-2">
+                    🛍️ Shopping
+                  </h3>
+                  <p className="text-sm text-zinc-400">{localTips.shopping}</p>
+                </div>
+              )}
+            </div>
+          </motion.section>
+        )}
       </div>
     </div>
   );
