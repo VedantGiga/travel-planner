@@ -40,7 +40,7 @@ const Navbar = () => {
     >
       {/* Logo Section */}
       <Link to="/" className="flex items-center">
-        <img src="/download.png" alt="VoyageMind" className="h-20 w-20" />
+        <img src="/WhatsApp_Image_2025-11-02_at_3.36.26_AM-removebg-preview.png" alt="VoyageAI" className="h-24 w-auto" />
       </Link>
 
       {/* Nav Buttons */}
@@ -106,6 +106,41 @@ const Navbar = () => {
           className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
         >
           ✈️ My Trips
+        </Link>
+        <Link 
+          to="/journal" 
+          onClick={() => setShowDropdown(false)}
+          className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
+        >
+          📖 Travel Journal
+        </Link>
+        <Link 
+          to="/live-sharing" 
+          onClick={() => setShowDropdown(false)}
+          className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
+        >
+          📍 Live Sharing
+        </Link>
+        <Link 
+          to="/reviews" 
+          onClick={() => setShowDropdown(false)}
+          className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
+        >
+          ⭐ Reviews
+        </Link>
+        <Link 
+          to="/community" 
+          onClick={() => setShowDropdown(false)}
+          className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
+        >
+          🌍 Community
+        </Link>
+        <Link 
+          to="/safety" 
+          onClick={() => setShowDropdown(false)}
+          className="block px-4 py-3 text-gray-800 hover:text-black hover:bg-gray-100 transition-colors font-medium"
+        >
+          🛡️ Safety Hub
         </Link>
       </div>
     )}

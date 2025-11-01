@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { auth } from "@/lib/auth";
+import Lottie from "lottie-react";
+import animationData from "@/assets/airplane-animation.json";
 
 const TripWizard = () => {
   const [formData, setFormData] = useState({
@@ -44,8 +46,11 @@ const TripWizard = () => {
       
       if (response.ok) {
         const result = await response.json();
-        localStorage.setItem('tripPlan', JSON.stringify(result));
-        navigate("/itinerary");
+        const tripId = Date.now().toString();
+        const tripData = { ...result, id: tripId, createdAt: new Date().toISOString() };
+        localStorage.setItem('tripPlan', JSON.stringify(tripData));
+        localStorage.setItem(`trip_${tripId}`, JSON.stringify(tripData));
+        navigate("/planning");
       } else {
         console.error('Failed to plan trip');
       }
@@ -180,10 +185,8 @@ const TripWizard = () => {
         >
           {isLoading ? (
             <div className="flex items-center gap-3">
-              <div className="flex items-center space-x-1">
-                <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce [animation-delay:-0.2s]" />
-                <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce [animation-delay:-0.1s]" />
-                <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce" />
+              <div className="w-8 h-8">
+                <Lottie animationData={animationData} loop={true} />
               </div>
               <span>Creating your trip...</span>
             </div>

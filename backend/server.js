@@ -7,6 +7,9 @@ const crypto = require('crypto');
 const prisma = require('./lib/prisma');
 const auth = require('./middleware/auth');
 const OrchestratorAgent = require('./agents/OrchestratorAgent');
+const travelBuddiesRoutes = require('./routes/travelBuddies');
+const postsRoutes = require('./routes/posts');
+const safetyRoutes = require('./routes/safety');
 require('dotenv').config();
 
 const app = express();
@@ -29,6 +32,11 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api', travelBuddiesRoutes);
+app.use('/api', postsRoutes);
+app.use('/api', safetyRoutes);
+
+// Base route
 app.get('/', (req, res) => {
   res.json({ message: 'Travel Plannar Backend API' });
 });

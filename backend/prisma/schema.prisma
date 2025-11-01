@@ -14,10 +14,21 @@ model User {
   password         String
   resetToken       String?
   resetTokenExpiry DateTime?
+  age              Int?
+  location         String?
+  avatar           String?
+  bio              String?
+  travelPreferences Json?
+  isActive         Boolean         @default(true)
+  lastActive       DateTime        @default(now())
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
   trips            Trip[]
   preferences      UserPreference?
+  sentConnections  Connection[]    @relation("SentConnections")
+  receivedConnections Connection[] @relation("ReceivedConnections")
+  posts            Post[]
+  safetyReports    SafetyReport[]
 }
 
 model Trip {
@@ -82,9 +93,86 @@ model UserPreference {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+model Connection {
+  id         String            @id @default(cuid())
+  senderId   String
+  receiverId String
+  status     ConnectionStatus  @default(PENDING)
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  
+  sender     User              @relation("SentConnections", fields: [senderId], references: [id])
+  receiver   User              @relation("ReceivedConnections", fields: [receiverId], references: [id])
+  
+  @@unique([senderId, receiverId])
+}
+
 enum BookingType {
   FLIGHT
   HOTEL
   TRAIN
   ACTIVITY
+}
+
+model Post {
+  id        String   @id @default(cuid())
+  content   String
+  image     String?
+  tags      String[]
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  likes     Int      @default(0)
+  comments  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SafetyReport {
+  id          String       @id @default(cuid())
+  type        ReportType
+  title       String
+  description String
+  location    String
+  latitude    Float
+  longitude   Float
+  severity    String
+  verified    Boolean      @default(false)
+  upvotes     Int          @default(0)
+  userId      String
+  user        User         @relation(fields: [userId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  @@index([latitude, longitude])
+}
+
+model ScamAlert {
+  id          String   @id @default(cuid())
+  category    String
+  description String
+  amount      Float?
+  location    String
+  latitude    Float
+  longitude   Float
+  aiAnalysis  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([latitude, longitude])
+}
+
+enum ReportType {
+  SCAM
+  UNSAFE_AREA
+  FAKE_GUIDE
+  TAXI_FRAUD
+  OVERPRICING
+  TOURIST_TRAP
+  AGGRESSIVE_VENDOR
+}
+
+enum ConnectionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
 }

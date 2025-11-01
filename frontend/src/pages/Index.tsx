@@ -8,6 +8,8 @@ import DarkVeil from "@/components/DarkVeil";
 import Navbar from "@/components/Navbar";
 import TripWizard from "@/components/TripWizard";
 import { auth } from "@/lib/auth";
+import Lottie from "lottie-react";
+import animationData from "@/assets/airplane-animation.json";
 
 const Index = () => {
   const [message, setMessage] = useState("");
@@ -24,7 +26,8 @@ const Index = () => {
       return;
     }
 
-    setIsLoading(true);
+    localStorage.removeItem('tripPlan');
+    navigate("/planning", { replace: true });
     
     try {
       const response = await fetch('http://localhost:5000/api/plan-trip', {
@@ -38,20 +41,20 @@ const Index = () => {
       
       if (response.ok) {
         const result = await response.json();
-        localStorage.setItem('tripPlan', JSON.stringify(result));
-        navigate("/itinerary");
+        const tripId = Date.now().toString();
+        const tripData = { ...result, id: tripId, createdAt: new Date().toISOString() };
+        localStorage.setItem('tripPlan', JSON.stringify(tripData));
+        localStorage.setItem(`trip_${tripId}`, JSON.stringify(tripData));
       } else {
         console.error('Failed to plan trip');
       }
     } catch (error) {
       console.error('Error planning trip:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <div className="h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-white relative">
       <Navbar />
       <div className="absolute inset-0 overflow-hidden">
         <DarkVeil 
@@ -73,9 +76,9 @@ const Index = () => {
       </div>
 
       {/* Main Content - Two Full Sections */}
-      <div className="relative z-10 h-[calc(100vh-140px)]">
+      <div className="relative z-10">
         {/* Desktop Layout */}
-        <div className="hidden lg:grid lg:grid-cols-2 h-full">
+        <div className="hidden lg:grid lg:grid-cols-2 min-h-[calc(100vh-140px)]">
           {/* Chat Mode Section */}
           <motion.section
             initial={{ opacity: 0, x: -20 }}
@@ -104,24 +107,13 @@ const Index = () => {
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={!message.trim() || isLoading}
+                  disabled={!message.trim()}
                   className="w-full h-14 rounded-3xl text-lg font-medium text-white bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] hover:opacity-90 transition-all"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center space-x-1">
-                        <span className="w-2.5 h-2.5 bg-white/70 rounded-full animate-bounce [animation-delay:-0.2s]" />
-                        <span className="w-2.5 h-2.5 bg-white/70 rounded-full animate-bounce [animation-delay:-0.1s]" />
-                        <span className="w-2.5 h-2.5 bg-white/70 rounded-full animate-bounce" />
-                      </div>
-                      <span>Planning your journey...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      Plan My Trip
-                      <Send className="h-5 w-5" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    Plan My Trip
+                    <Send className="h-5 w-5" />
+                  </div>
                 </Button>
               </form>
 
@@ -159,7 +151,7 @@ const Index = () => {
         </div>
 
         {/* Mobile Layout */}
-        <div className="lg:hidden px-4 h-full overflow-y-auto">
+        <div className="lg:hidden px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -186,24 +178,13 @@ const Index = () => {
               <Button
                 type="submit"
                 size="lg"
-                disabled={!message.trim() || isLoading}
+                disabled={!message.trim()}
                 className="w-full h-14 rounded-3xl text-lg font-medium text-white bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] hover:opacity-90 transition-all"
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center space-x-1">
-                      <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce [animation-delay:-0.2s]" />
-                      <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce [animation-delay:-0.1s]" />
-                      <span className="w-2 h-2 bg-white/70 rounded-full animate-bounce" />
-                    </div>
-                    <span>Planning...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Plan My Trip
-                    <Send className="h-5 w-5" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  Plan My Trip
+                  <Send className="h-5 w-5" />
+                </div>
               </Button>
             </form>
           </motion.div>
@@ -223,9 +204,89 @@ const Index = () => {
           >
             <TripWizard />
           </motion.div>
+          
+          {/* Indian Hidden Festivals Section - Mobile */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="mt-12"
+          >
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-white mb-2">Hidden Grooves Of india</h2>
+              <p className="text-zinc-400">Discover unique festivals off the beaten path</p>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { name: "Hornbill Festival", emoji: "🦅", location: "Nagaland", month: "Dec", color: "from-[#fcaa13] to-[#fb6b10]", place: "Kohima" },
+                { name: "Hemis Festival", emoji: "🏔️", location: "Ladakh", month: "Jun-Jul", color: "from-[#fb6b10] to-[#ef420f]", place: "Leh" },
+                { name: "Pushkar Fair", emoji: "🐪", location: "Rajasthan", month: "Nov", color: "from-[#ef420f] to-[#b62319]", place: "Pushkar" },
+                { name: "Thrissur Pooram", emoji: "🐘", location: "Kerala", month: "Apr-May", color: "from-[#b62319] to-[#742f45]", place: "Thrissur" }
+              ].map((festival, index) => (
+                <div
+                  key={festival.name}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setMessage(`Plan a trip to ${festival.place} to experience ${festival.name}`);
+                  }}
+                >
+                  <div className={`bg-gradient-to-br ${festival.color} rounded-xl p-4 text-white hover:scale-105 transition-transform duration-300`}>
+                    <div className="text-2xl mb-2">{festival.emoji}</div>
+                    <h3 className="text-sm font-bold mb-1">{festival.name}</h3>
+                    <p className="text-white/80 text-xs mb-1">{festival.place}</p>
+                    <p className="text-white/60 text-xs">{festival.month}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </div>
 
+      {/* Indian Hidden Festivals Section - Desktop */}
+      <div className="hidden lg:block relative z-10 py-16">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.4 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-3xl font-bold text-white mb-4">🎭 Hidden Gems of India</h2>
+            <p className="text-zinc-400 text-lg">Discover unique festivals off the beaten path</p>
+          </motion.div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { name: "Hornbill Festival", emoji: "🦅", location: "Nagaland", month: "Dec", color: "from-[#fcaa13] to-[#fb6b10]", place: "Kohima" },
+              { name: "Hemis Festival", emoji: "🏔️", location: "Ladakh", month: "Jun-Jul", color: "from-[#fb6b10] to-[#ef420f]", place: "Leh" },
+              { name: "Pushkar Camel Fair", emoji: "🐪", location: "Rajasthan", month: "Nov", color: "from-[#ef420f] to-[#b62319]", place: "Pushkar" },
+              { name: "Thrissur Pooram", emoji: "🐘", location: "Kerala", month: "Apr-May", color: "from-[#b62319] to-[#742f45]", place: "Thrissur" },
+              { name: "Ziro Music Festival", emoji: "🎵", location: "Arunachal Pradesh", month: "Sep", color: "from-[#742f45] to-[#491531]", place: "Ziro" },
+              { name: "Rann Utsav", emoji: "🌙", location: "Gujarat", month: "Nov-Feb", color: "from-[#491531] to-[#000000]", place: "Kutch" }
+            ].map((festival, index) => (
+              <motion.div
+                key={festival.name}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.5 + index * 0.1 }}
+                className="group cursor-pointer"
+                onClick={() => {
+                  setMessage(`Plan a trip to ${festival.place} to experience ${festival.name}`);
+                }}
+              >
+                <div className={`bg-gradient-to-br ${festival.color} rounded-2xl p-6 text-white hover:scale-105 transition-transform duration-300 shadow-lg`}>
+                  <div className="text-4xl mb-3">{festival.emoji}</div>
+                  <h3 className="text-lg font-bold mb-2">{festival.name}</h3>
+                  <p className="text-white/80 text-sm mb-1">{festival.place}, {festival.location}</p>
+                  <p className="text-white/60 text-xs">{festival.month}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
 
     </div>
   );

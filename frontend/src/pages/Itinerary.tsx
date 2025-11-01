@@ -21,6 +21,29 @@ const Itinerary = () => {
   }, []);
 
   const [destinationImage, setDestinationImage] = useState('');
+  const [weather, setWeather] = useState(null);
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (tripData?.planning?.intent?.destination) {
+        try {
+          const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(tripData.planning.intent.destination)}&appid=2391a452936737c2dfcb4c2728a53b67&units=metric`);
+          const data = await response.json();
+          console.log('Weather data:', data);
+          if (data.cod === 200) {
+            setWeather(data);
+          } else {
+            console.error('Weather API error:', data.message);
+            setWeather({ main: { temp: 25, feels_like: 27, humidity: 60 }, weather: [{ main: 'Clear', description: 'sunny' }] });
+          }
+        } catch (error) {
+          console.error('Failed to fetch weather:', error);
+          setWeather({ main: { temp: 25, feels_like: 27, humidity: 60 }, weather: [{ main: 'Clear', description: 'sunny' }] });
+        }
+      }
+    };
+    fetchWeather();
+  }, [tripData]);
 
   useEffect(() => {
     const fetchDestinationImage = async () => {
@@ -74,11 +97,11 @@ const Itinerary = () => {
         <div className="absolute inset-0 bg-black/50"></div>
         
         {/* Back Button */}
-        <Button asChild variant="ghost" size="icon" className="absolute top-6 left-6 z-20 rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40">
-          <Link to="/">
+        <Link to="/" className="absolute top-6 left-6 z-20">
+          <Button variant="ghost" size="icon" className="rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40">
             <ArrowLeft className="h-5 w-5 text-white" />
-          </Link>
-        </Button>
+          </Button>
+        </Link>
         
         {/* Hero Content */}
         <div className="relative z-10 text-center text-white px-6">
@@ -86,7 +109,7 @@ const Itinerary = () => {
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="text-6xl md:text-8xl font-bold mb-4"
+            className="text-6xl md:text-8xl font-bold mb-4 uppercase"
           >
             {intent.destination}
           </motion.h1>
@@ -115,10 +138,27 @@ const Itinerary = () => {
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.6 }}
-            className="text-xl text-gray-200 max-w-2xl mx-auto"
+            className="text-xl text-gray-200 max-w-2xl mx-auto mb-8"
           >
             Discover the magic of {intent.destination} with our AI-curated itinerary
           </motion.p>
+          
+          {weather && weather.main && weather.weather?.[0] && (
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="bg-black/20 backdrop-blur-sm rounded-xl px-4 py-2 inline-flex items-center gap-3"
+            >
+              <span className="text-2xl">
+                {weather.weather[0].main === 'Clear' ? '☀️' : 
+                 weather.weather[0].main === 'Clouds' ? '☁️' : 
+                 weather.weather[0].main === 'Rain' ? '🌧️' : '🌤️'}
+              </span>
+              <span className="text-xl font-semibold text-white">{Math.round(weather.main.temp)}°C</span>
+              <span className="text-sm text-gray-300 capitalize">{weather.weather[0].description}</span>
+            </motion.div>
+          )}
         </div>
         
         {/* Scroll Indicator */}
@@ -207,25 +247,31 @@ const Itinerary = () => {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {options.activities && options.activities.length > 0 ? (
               options.activities.map((place, index) => (
-                <div key={index} className="bg-zinc-900 rounded-2xl overflow-hidden hover:bg-zinc-800 transition-colors">
-                  <div className="aspect-video bg-zinc-800">
-                    <img src={place.image} alt={place.name} className="w-full h-full object-cover" />
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+                <div key={index} className="group relative bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-all duration-300 hover:scale-105">
+                  <div className="aspect-[4/3] relative overflow-hidden">
+                    <img src={place.image} alt={place.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute top-4 left-4">
+                      <span className="bg-white/20 backdrop-blur-sm text-white px-3 py-1 rounded-full text-xs font-medium border border-white/30">
                         {place.category}
                       </span>
-                      <div className="flex items-center gap-1">
-                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                        <span className="text-white font-medium">{place.rating}</span>
-                      </div>
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">{place.name}</h3>
-                    <p className="text-zinc-400 text-sm mb-4">{place.description}</p>
-                    <div className="flex items-center gap-2 text-zinc-300">
-                      <Clock className="h-4 w-4" />
-                      <span className="text-sm">{place.duration}</span>
+                    <div className="absolute top-4 right-4 flex items-center gap-1 bg-black/30 backdrop-blur-sm rounded-full px-2 py-1">
+                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                      <span className="text-white text-xs font-medium">{place.rating}</span>
+                    </div>
+                  </div>
+                  <div className="p-5">
+                    <h3 className="text-lg font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">{place.name}</h3>
+                    <p className="text-zinc-400 text-sm mb-3 line-clamp-2">{place.description}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-zinc-300">
+                        <Clock className="h-4 w-4" />
+                        <span className="text-sm">{place.duration}</span>
+                      </div>
+                      <button className="text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors">
+                        View Details →
+                      </button>
                     </div>
                   </div>
                 </div>
