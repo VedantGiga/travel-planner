@@ -55,6 +55,8 @@ class TravelPlannerAgent {
     } catch (error) {
       // Extract from message
       const fromToMatch = userMessage.match(/(?:from\s+)?([a-zA-Z\s]+)\s+to\s+([a-zA-Z\s]+)/i);
+      const destinationMatch = userMessage.match(/(?:trip to|visit|go to|plan.*?to)\s+([a-zA-Z]+)/i) ||
+                              userMessage.match(/^([a-zA-Z]+)(?:\s|$)/i);
       const budgetMatch = userMessage.match(/(\d+)\s*(?:rs|rupees?|inr|₹)/i);
       const durationMatch = userMessage.match(/(\d+)\s*(?:days?|day)/i);
       const travelersMatch = userMessage.match(/(\d+)\s*(?:people|persons?|travelers?|travellers?|pax)/i) || 
@@ -70,6 +72,20 @@ class TravelPlannerAgent {
           travelers: travelersMatch ? parseInt(travelersMatch[1]) : 2,
           preferences: ["sightseeing"]
         };
+      } else if (destinationMatch) {
+        const destination = destinationMatch[1].trim();
+        // Only use if it's a valid city name (not containing budget/duration words)
+        if (!destination.match(/budget|my|is|days?|people|persons?|travelers?/i)) {
+          return {
+            from: "Delhi",
+            destination: destination,
+            tripType: "leisure",
+            budget: budgetMatch ? parseInt(budgetMatch[1]) : 25000,
+            duration: durationMatch ? parseInt(durationMatch[1]) : 5,
+            travelers: travelersMatch ? parseInt(travelersMatch[1]) : 2,
+            preferences: ["sightseeing"]
+          };
+        }
       }
       
       throw new Error('Failed to extract travel intent from message');
