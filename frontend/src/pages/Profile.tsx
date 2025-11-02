@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Mail, Calendar, MapPin, Settings, Edit3 } from "lucide-react";
+import { User, Mail, Calendar, MapPin, Settings, Edit3, Camera, Phone, Globe, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import Navbar from "@/components/Navbar";
 import { auth } from "@/lib/auth";
 
@@ -10,29 +11,52 @@ const Profile = () => {
   const [user, setUser] = useState({
     name: "",
     email: "",
+    phone: "",
+    bio: "",
+    location: "",
+    occupation: "",
+    avatar: "",
     joinDate: "",
     totalTrips: 0,
     favoriteDestination: ""
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: "", email: "" });
+  const [editForm, setEditForm] = useState({ name: "", email: "", phone: "", bio: "", location: "", occupation: "" });
+  const [avatarPreview, setAvatarPreview] = useState("");
 
   useEffect(() => {
     // Mock user data - replace with actual API call
     const userData = {
       name: "Travel Explorer",
-      email: "explorer@example.com", 
+      email: "explorer@example.com",
+      phone: "+91 98765 43210",
+      bio: "Passionate traveler exploring the world one destination at a time. Love adventure, culture, and meeting new people.",
+      location: "Mumbai, India",
+      occupation: "Digital Nomad",
+      avatar: "",
       joinDate: "January 2024",
       totalTrips: 5,
       favoriteDestination: "Goa"
     };
     setUser(userData);
-    setEditForm({ name: userData.name, email: userData.email });
+    setEditForm({ name: userData.name, email: userData.email, phone: userData.phone, bio: userData.bio, location: userData.location, occupation: userData.occupation });
+    setAvatarPreview(userData.avatar);
   }, []);
 
   const handleSave = () => {
-    setUser({ ...user, ...editForm });
+    setUser({ ...user, ...editForm, avatar: avatarPreview });
     setIsEditing(false);
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   return (
@@ -50,20 +74,38 @@ const Profile = () => {
           >
             <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 rounded-3xl p-8 border border-zinc-700">
               <div className="flex items-center gap-6">
-                <div className="w-24 h-24 bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] rounded-full flex items-center justify-center">
-                  <User className="h-12 w-12 text-white" />
+                <div className="relative">
+                  {user.avatar || avatarPreview ? (
+                    <img src={avatarPreview || user.avatar} alt="Profile" className="w-32 h-32 rounded-full object-cover border-4 border-zinc-700" />
+                  ) : (
+                    <div className="w-32 h-32 bg-gradient-to-r from-[#fcaa13] to-[#fb6b10] rounded-full flex items-center justify-center">
+                      <User className="h-16 w-16 text-white" />
+                    </div>
+                  )}
+                  {isEditing && (
+                    <label className="absolute bottom-0 right-0 w-10 h-10 bg-[#fcaa13] rounded-full flex items-center justify-center cursor-pointer hover:bg-[#fb6b10] transition-colors">
+                      <Camera className="h-5 w-5 text-white" />
+                      <input type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+                    </label>
+                  )}
                 </div>
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-white mb-2">{user.name}</h1>
-                  <p className="text-zinc-400 mb-4">{user.email}</p>
+                  <h1 className="text-4xl font-bold text-white mb-2">{user.name}</h1>
+                  <p className="text-zinc-400 mb-1">{user.occupation}</p>
+                  <p className="text-zinc-500 text-sm mb-4">{user.email}</p>
+                  <p className="text-zinc-300 mb-4 max-w-2xl">{user.bio}</p>
                   <div className="flex items-center gap-6 text-sm text-zinc-300">
                     <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4" />
+                      <MapPin className="h-4 w-4 text-[#fcaa13]" />
+                      <span>{user.location}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-[#fcaa13]" />
                       <span>Joined {user.joinDate}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      <span>{user.totalTrips} trips planned</span>
+                      <Globe className="h-4 w-4 text-[#fcaa13]" />
+                      <span>{user.totalTrips} trips</span>
                     </div>
                   </div>
                 </div>
@@ -88,9 +130,9 @@ const Profile = () => {
             >
               <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
                 <h3 className="text-xl font-semibold text-white mb-4">Edit Profile</h3>
-                <div className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm text-zinc-400 mb-2 block">Name</label>
+                    <label className="text-sm text-zinc-400 mb-2 block">Full Name</label>
                     <Input
                       value={editForm.name}
                       onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
@@ -105,14 +147,47 @@ const Profile = () => {
                       className="bg-zinc-800 border-zinc-700 text-white"
                     />
                   </div>
-                  <div className="flex gap-3">
-                    <Button onClick={handleSave} className="bg-[#7B4DFF] hover:bg-[#6B3FEF]">
-                      Save Changes
-                    </Button>
-                    <Button onClick={() => setIsEditing(false)} variant="outline" className="border-zinc-600 text-white">
-                      Cancel
-                    </Button>
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-2 block">Phone</label>
+                    <Input
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
                   </div>
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-2 block">Location</label>
+                    <Input
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-zinc-400 mb-2 block">Occupation</label>
+                    <Input
+                      value={editForm.occupation}
+                      onChange={(e) => setEditForm({ ...editForm, occupation: e.target.value })}
+                      className="bg-zinc-800 border-zinc-700 text-white"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm text-zinc-400 mb-2 block">Bio</label>
+                    <Textarea
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
+                      className="bg-zinc-800 border-zinc-700 text-white min-h-[100px]"
+                      placeholder="Tell us about yourself..."
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-6">
+                  <Button onClick={handleSave} className="bg-gradient-to-r from-[#fcaa13] to-[#fb6b10] hover:opacity-90">
+                    Save Changes
+                  </Button>
+                  <Button onClick={() => setIsEditing(false)} variant="outline" className="border-zinc-600 text-white hover:bg-zinc-800">
+                    Cancel
+                  </Button>
                 </div>
               </div>
             </motion.section>
