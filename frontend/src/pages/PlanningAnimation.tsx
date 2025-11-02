@@ -18,8 +18,13 @@ const PlanningAnimation = () => {
 
     const timeout = setTimeout(() => {
       clearInterval(checkTripData);
-      navigate('/itinerary', { replace: true });
-    }, 10000);
+      const tripData = localStorage.getItem('tripPlan');
+      if (tripData) {
+        navigate('/itinerary', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }, 30000);
 
     return () => {
       clearInterval(checkTripData);

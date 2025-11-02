@@ -30,7 +30,8 @@ const TripWizard = () => {
       return;
     }
 
-    setIsLoading(true);
+    localStorage.removeItem('tripPlan');
+    navigate("/planning", { replace: true });
     
     try {
       const message = `Plan a ${formData.duration} days ${formData.tripType} trip from ${formData.from} to ${formData.destination} for ${formData.travelers} people with budget ₹${formData.budget}`;
@@ -50,14 +51,11 @@ const TripWizard = () => {
         const tripData = { ...result, id: tripId, createdAt: new Date().toISOString() };
         localStorage.setItem('tripPlan', JSON.stringify(tripData));
         localStorage.setItem(`trip_${tripId}`, JSON.stringify(tripData));
-        navigate("/planning");
       } else {
         console.error('Failed to plan trip');
       }
     } catch (error) {
       console.error('Error planning trip:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -180,22 +178,12 @@ const TripWizard = () => {
         <Button
           type="submit"
           size="lg"
-          disabled={isLoading}
           className="w-full h-14 rounded-2xl text-lg font-medium text-white bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] hover:opacity-90 transition-all"
         >
-          {isLoading ? (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8">
-                <Lottie animationData={animationData} loop={true} />
-              </div>
-              <span>Creating your trip...</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              Create Trip Plan
-              <Send className="h-5 w-5" />
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            Create Trip Plan
+            <Send className="h-5 w-5" />
+          </div>
         </Button>
       </form>
     </div>

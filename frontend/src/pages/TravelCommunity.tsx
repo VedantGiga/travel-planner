@@ -307,7 +307,6 @@ const TravelCommunity = () => {
                         <div className="flex-1">
                           <h3 className="font-bold text-white">{buddy.name}</h3>
                           <p className="text-sm text-gray-400">{buddy.location || 'Location not set'}</p>
-                          {buddy.age && <p className="text-xs text-gray-500">{buddy.age} years old</p>}
                         </div>
                       </div>
 

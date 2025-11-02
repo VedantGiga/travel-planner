@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 
 const Itinerary = () => {
   const [tripData, setTripData] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(1);
 
   useEffect(() => {
     const storedData = localStorage.getItem('tripPlan');
@@ -65,15 +66,7 @@ const Itinerary = () => {
   }, [tripData]);
 
   if (!tripData) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-2 border-zinc-800 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold mb-2 text-white">Loading your trip</h2>
-          <p className="text-zinc-500 text-sm">Preparing your itinerary</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   const { planning } = tripData;
@@ -231,8 +224,9 @@ const Itinerary = () => {
               return (
                 <button
                   key={dayNumber}
+                  onClick={() => setSelectedDay(dayNumber)}
                   className={`px-6 py-3 rounded-full font-medium whitespace-nowrap ${
-                    dayNumber === 1 
+                    dayNumber === selectedDay 
                       ? 'bg-blue-600 text-white' 
                       : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'
                   }`}
@@ -246,7 +240,7 @@ const Itinerary = () => {
           {/* Places Grid */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {options.activities && options.activities.length > 0 ? (
-              options.activities.map((place, index) => (
+              options.activities.filter((_, index) => Math.floor(index / 6) + 1 === selectedDay).map((place, index) => (
                 <div key={index} className="group relative bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-3xl overflow-hidden border border-zinc-800 hover:border-zinc-700 transition-all duration-300 hover:scale-105">
                   <div className="aspect-[4/3] relative overflow-hidden">
                     <img src={place.image} alt={place.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -276,6 +270,11 @@ const Itinerary = () => {
                   </div>
                 </div>
               ))
+            ) : options.activities && options.activities.length > 0 ? (
+              <div className="col-span-full text-center py-12">
+                <MapPin className="h-12 w-12 mx-auto mb-4 text-zinc-600" />
+                <p className="text-zinc-400">No places for Day {selectedDay}</p>
+              </div>
             ) : (
               <div className="col-span-full text-center py-12">
                 <MapPin className="h-12 w-12 mx-auto mb-4 text-zinc-600" />

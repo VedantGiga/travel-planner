@@ -40,7 +40,7 @@ const Navbar = () => {
     >
       {/* Logo Section */}
       <Link to="/" className="flex items-center">
-        <img src="/Wha.png" alt="VoyageAI" className="h-16 w-auto" />
+        <img src="/WhatsApp_Image_2025-11-02_at_3.36.26_AM-removebg-preview.png" alt="VoyageAI" className="h-32 w-auto" />
       </Link>
 
       {/* Nav Buttons */}

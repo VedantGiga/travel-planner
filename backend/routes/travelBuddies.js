@@ -14,11 +14,6 @@ router.get('/travel-buddies', auth, async (req, res) => {
         id: true,
         name: true,
         email: true,
-        age: true,
-        location: true,
-        avatar: true,
-        bio: true,
-        travelPreferences: true,
         createdAt: true
       },
       take: 20

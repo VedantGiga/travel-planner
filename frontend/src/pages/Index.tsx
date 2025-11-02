@@ -26,7 +26,8 @@ const Index = () => {
       return;
     }
 
-    setIsLoading(true);
+    localStorage.removeItem('tripPlan');
+    navigate("/planning", { replace: true });
     
     try {
       const response = await fetch('http://localhost:5000/api/plan-trip', {
@@ -44,14 +45,11 @@ const Index = () => {
         const tripData = { ...result, id: tripId, createdAt: new Date().toISOString() };
         localStorage.setItem('tripPlan', JSON.stringify(tripData));
         localStorage.setItem(`trip_${tripId}`, JSON.stringify(tripData));
-        navigate("/planning");
       } else {
         console.error('Failed to plan trip');
       }
     } catch (error) {
       console.error('Error planning trip:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -109,22 +107,13 @@ const Index = () => {
                 <Button
                   type="submit"
                   size="lg"
-                  disabled={!message.trim() || isLoading}
+                  disabled={!message.trim()}
                   className="w-full h-14 rounded-3xl text-lg font-medium text-white bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] hover:opacity-90 transition-all"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8">
-                        <Lottie animationData={animationData} loop={true} />
-                      </div>
-                      <span>Planning your journey...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3">
-                      Plan My Trip
-                      <Send className="h-5 w-5" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-3">
+                    Plan My Trip
+                    <Send className="h-5 w-5" />
+                  </div>
                 </Button>
               </form>
 
@@ -189,22 +178,13 @@ const Index = () => {
               <Button
                 type="submit"
                 size="lg"
-                disabled={!message.trim() || isLoading}
+                disabled={!message.trim()}
                 className="w-full h-14 rounded-3xl text-lg font-medium text-white bg-gradient-to-r from-[#7B4DFF] to-[#FF4BB4] hover:opacity-90 transition-all"
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6">
-                      <Lottie animationData={animationData} loop={true} />
-                    </div>
-                    <span>Planning...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    Plan My Trip
-                    <Send className="h-5 w-5" />
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  Plan My Trip
+                  <Send className="h-5 w-5" />
+                </div>
               </Button>
             </form>
           </motion.div>
