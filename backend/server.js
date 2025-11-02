@@ -329,7 +329,8 @@ app.get('/api/trains/history', auth, async (req, res) => {
   }
 });
 
-if (process.env.NODE_ENV !== 'production') {
+// For local development
+if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
   });
